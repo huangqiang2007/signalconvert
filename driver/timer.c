@@ -13,7 +13,6 @@
 #include "em_timer.h"
 #include "em_chip.h"
 #include "em_gpio.h"
-#include "Uart.h"
 #include "adcdrv.h"
 // Freq = 25M
 #define TOP 25000
@@ -30,7 +29,6 @@ extern uint32_t sleeptime;
 void TIMER0_IRQHandler(void)
 {
 	/* Clear flag for TIMER0 overflow interrupt */
-	static uint32_t cnt = 0;
 	TIMER_IntClear(TIMER0, TIMER_IF_OF);
 }
 

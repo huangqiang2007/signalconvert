@@ -11,6 +11,7 @@
 #include "udelay.h"
 #include "hal-config.h"
 #include "main.h"
+#include "uartdrv.h"
 #include "Typedefs.h"
 
 #define CMU_MODE_DIGEXTCLK	2
@@ -20,11 +21,8 @@ void CMU_ClockModeSet(uint32_t mode)
   CMU->CTRL = (CMU->CTRL & ~_CMU_CTRL_HFXOMODE_MASK) | mode;
 }
 
-int main(void)
+void Clock_config(void)
 {
-	/* Chip errata */
-	CHIP_Init();
-
 	/*
 	 * Enable clocks required
 	 * */
@@ -43,11 +41,22 @@ int main(void)
 	CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_ULFRCO);
 	CMU_OscillatorEnable(cmuSelect_ULFRCO, true, true);
 	CMU_ClockEnable(cmuClock_HFLE, true);
+}
+
+int main(void)
+{
+	/* Chip errata */
+	CHIP_Init();
 
 	/*
-	 * Uart init for delivering converted data
+	 * config needed clock
 	 * */
-	//Uart_Init();
+	Clock_config();
+
+	/*
+	 * RS422 Uart init for delivering converted data
+	 * */
+	uartSetup();
 
 	/*
 	 * config 7 ADC channels
@@ -60,13 +69,12 @@ int main(void)
 	 * */
 	DMAConfig();
 
-
   	UDELAY_Calibrate();
-  	setupTimer1();
   	Delay_ms(500);
 
-
 	while (1) {
+		sendFrame();
+		Delay_ms(2);
 	}
 }
 

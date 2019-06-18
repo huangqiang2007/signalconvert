@@ -93,14 +93,13 @@ void uartSetup(void)
 }
 
 
-
-/******************************************************************************
+/*
  * @brief  uartGetChar function
  *
  *  Note that if there are no pending characters in the receive buffer, this
  *  function will hang until a character is received.
  *
- *****************************************************************************/
+ * */
 uint8_t uartGetChar( )
 {
 	uint8_t ch;

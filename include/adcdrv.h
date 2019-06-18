@@ -22,28 +22,25 @@
  * @adc_sample_buffer: the array stores the sampled data
  * */
 typedef struct {
-	bool free;
 	uint8_t adc_sample_buffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
 } ADC_SAMPLE_BUFFERDef;
 
 /*
  * the buffer queue for sampled data
  *
- * @valid_buff_num: the number indicates how many buffer stores valid sampled data
+ * @samples: how many items in the queue
+ * @in: queue head for data enqueue
+ * @out: queue tail for data dequeue
  * @adc_smaple_data[]: the array of ADC_SAMPLE_BUFFER type
  * */
 typedef struct {
-	int8_t valid_buff_num;
-	volatile ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
+	int8_t samples;
+	int8_t in, out;
+	ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
 } ADC_SAMPLE_DATA_QUEUEDef;
 
-void ADCConfig(void);
-void DMAConfig(void);
-int VoltageDetect(uint32_t minvol);
-
-//void GetVoltage(struct RF_Record *record);
-
-void ADCSingleConfig(void);
-uint32_t ADCSingleGet();
+extern void ADCConfig(void);
+extern void DMAConfig(void);
+extern void sendFrame(void);
 
 #endif /* ADCDRV_H_ */

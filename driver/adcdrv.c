@@ -15,7 +15,9 @@
 #include "uartdrv.h"
 #include <stdbool.h>
 
-volatile ADC_SAMPLE_DATA_QUEUEDef adc_sample_data_queue;
+#define ADC_CLK_1M 1000000
+
+volatile ADC_SAMPLE_DATA_QUEUEDef adc_sample_data_queue = {0};
 DMA_CB_TypeDef dma_adc_cb;
 uint8_t sample_result[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
 uint8_t g_convResult[ADC_CHNL_NUM] = {0};
@@ -30,10 +32,10 @@ volatile uint8_t g_frameNum = 0;
  * */
 volatile UartFrame g_RS422frame = {0};
 
-/***************************************************************************//**
-* @brief
-*   Configure ADC for scan mode.
-*******************************************************************************/
+/*
+ * @brief
+ *   Configure ADC for scan mode.
+ * */
 void ADCConfig(void)
 {
 	ADC_Init_TypeDef init = ADC_INIT_DEFAULT;
@@ -45,9 +47,8 @@ void ADCConfig(void)
 	* Init common issues for both single conversion and scan mode
 	* */
 	init.timebase = ADC_TimebaseCalc(0);
-	init.prescale = ADC_PrescaleCalc(1000000, 0);
+	init.prescale = ADC_PrescaleCalc(ADC_CLK_1M, 0);
 	init.ovsRateSel = _ADC_CTRL_OVSRSEL_X32;
-	//init.lpfMode = adcLPFilterRC;
 	ADC_Init(ADC0, &init);
 
 	/*
@@ -62,16 +63,31 @@ void ADCConfig(void)
 	ADC_InitScan(ADC0, &scanInit);
 }
 
+static inline bool sampleQueueEmpty(ADC_SAMPLE_DATA_QUEUEDef *queue)
+{
+	if (queue->samples == 0)
+		return true;
+	else
+		return false;
+}
+
+static inline bool sampleQueueFull(ADC_SAMPLE_DATA_QUEUEDef *queue)
+{
+	if (queue->samples == ADC_SAMPLE_BUFFER_NUM)
+		return true;
+	else
+		return false;
+}
+
 static ADC_SAMPLE_BUFFERDef* DMA_getFreeSampleBuffer(void)
 {
 	ADC_SAMPLE_BUFFERDef *pbuff = NULL;
-	int i = 0;
 
-	for (; i < ADC_SAMPLE_BUFFER_NUM; i++) {
-		if (adc_sample_data_queue.adc_smaple_data[i].free == 0) {
-			adc_sample_data_queue.adc_smaple_data[i].free = 1;
-			pbuff = &(adc_sample_data_queue.adc_smaple_data[i]);
-		}
+	if (!sampleQueueFull(&adc_sample_data_queue)) {
+		pbuff = &(adc_sample_data_queue.adc_smaple_data[adc_sample_data_queue.in]);
+		adc_sample_data_queue.in++;
+		if (adc_sample_data_queue.in == ADC_SAMPLE_BUFFER_NUM - 1)
+			adc_sample_data_queue.in = 0;
 	}
 
 	return pbuff;
@@ -80,11 +96,12 @@ static ADC_SAMPLE_BUFFERDef* DMA_getFreeSampleBuffer(void)
 static ADC_SAMPLE_BUFFERDef* DMA_getValidBuffer(void)
 {
 	ADC_SAMPLE_BUFFERDef *pbuff = NULL;
-	int i = 0;
 
-	for (; i < ADC_SAMPLE_BUFFER_NUM; i++) {
-		if (adc_sample_data_queue.adc_smaple_data[i].free == 1)
-			pbuff = &(adc_sample_data_queue.adc_smaple_data[i]);
+	if (!sampleQueueEmpty(&adc_sample_data_queue)) {
+		pbuff = &(adc_sample_data_queue.adc_smaple_data[adc_sample_data_queue.out]);
+		adc_sample_data_queue.out++;
+		if (adc_sample_data_queue.out == ADC_SAMPLE_BUFFER_NUM - 1)
+			adc_sample_data_queue.out = 0;
 	}
 
 	return pbuff;
@@ -99,13 +116,17 @@ void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 		return;
 
 	memcpy(pSampleBuff->adc_sample_buffer, sample_result, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
-	pSampleBuff->free = 1;
+
+	/*
+	 * update sample counter
+	 * */
+	adc_sample_data_queue.samples++;
 }
 
-/***************************************************************************//**
-* @brief
-*   Configure DMA usage for this application.
-*******************************************************************************/
+/*
+ *@brief
+ *   Configure DMA usage for this application.
+ * */
 void DMAConfig(void)
 {
 	DMA_Init_TypeDef dmaInit;
@@ -175,13 +196,16 @@ int getAverageSampleValue(void)
 		sumSampleValue[6] += pSampleBuff->adc_sample_buffer[i + 6];
 	}
 
+	/*
+	 * update sample counter to return the buffer to queue,
+	 * disable interrupt to avoid race condition.
+	 * */
+	CORE_CriticalDisableIrq();
+	adc_sample_data_queue.samples--;
+	CORE_CriticalEnableIrq();
+
 	for (i = 0; i < ADC_CHNL_NUM; i++)
 		g_convResult[i] = sumSampleValue[i] / ADC_SCAN_LOOPS;
-
-	/*
-	 * this buffer is free again
-	 * */
-	pSampleBuff->free = 0;
 
 	return 0;
 }
@@ -208,4 +232,24 @@ void constructFrame(void)
 		sum += g_RS422frame.uartFrame[i];
 
 	g_RS422frame.uartFrame[11] = sum & 0xFF;
+}
+
+void sendFrame(void)
+{
+	/*
+	 * if the current frame is in UART sending, it should not
+	 * send a new frame.
+	 * */
+	if (g_RS422frame.in_sending == 1)
+		return;
+
+	/*
+	 * if there is no valid converted sample data, go back directly.
+	 * */
+	if (getAverageSampleValue() < 0)
+		return;
+
+	constructFrame();
+
+	uartPutData(g_RS422frame.uartFrame, UARTFRAME_LEN_12B);
 }
