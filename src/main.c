@@ -69,10 +69,16 @@ int main(void)
 	 * */
 	DMAConfig();
 
+	/*
+	 * enable ADC
+	 * */
+	DMA_ADC_Start();
+
   	UDELAY_Calibrate();
   	Delay_ms(500);
 
 	while (1) {
+		collectFrame();
 		sendFrame();
 		Delay_ms(2);
 	}

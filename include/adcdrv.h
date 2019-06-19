@@ -36,11 +36,13 @@ typedef struct {
 typedef struct {
 	int8_t samples;
 	int8_t in, out;
-	ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
-} ADC_SAMPLE_DATA_QUEUEDef;
+	volatile ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
+} AdcSampleDataQueueDef;
 
 extern void ADCConfig(void);
 extern void DMAConfig(void);
+extern void DMA_ADC_Start(void);
+extern void collectFrame(void);
 extern void sendFrame(void);
 
 #endif /* ADCDRV_H_ */

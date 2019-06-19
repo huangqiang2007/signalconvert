@@ -1,24 +1,80 @@
-/*
- * uartdrv.c
- *
- *  Created on: 2017-1-17
- *      Author: admin
- */
-
 #include <stdint.h>
+#include <stddef.h>
 #include "em_device.h"
 #include "em_usart.h"
 #include "em_gpio.h"
 #include "main.h"
+#include "uartdrv.h"
+
+#define UART_FRAMR_QUEUE_LEN_10 10
 
 /*
- * Function prototypes
+ * uart frame queue
+ * @num: data item counter
+ * @in: enqueue index
+ * @out: dequeue index
+ * @RS422frame[]: array for storing items
  * */
-void uartSetup(void);
-void uartPutData(uint8_t * dataPtr, uint32_t dataLen);
-uint32_t uartGetData(uint8_t * dataPtr, uint32_t dataLen);
-void uartPutChar(uint8_t charPtr);
-uint8_t uartGetChar(void);
+typedef struct {
+	volatile int8_t num;
+	int8_t in, out;
+	UartFrame RS422frame[UART_FRAMR_QUEUE_LEN_10];
+}UartFrameQueueDef;
+
+UartFrameQueueDef uartFrameQueue = {0};
+
+static bool UartFrameEnqueueEmpty(void)
+{
+	if (uartFrameQueue.num == 0)
+		return true;
+	else
+		return false;
+}
+
+static bool UartFrameEnqueueFull(void)
+{
+	if (uartFrameQueue.num == UART_FRAMR_QUEUE_LEN_10)
+		return true;
+	else
+		return false;
+}
+
+int UartFrameEnqueue(UartFrame *uFrame)
+{
+	if (UartFrameEnqueueFull())
+		return -1;
+
+	uartFrameQueue.RS422frame[uartFrameQueue.in] = *uFrame;
+	uartFrameQueue.in++;
+	if (uartFrameQueue.in > UART_FRAMR_QUEUE_LEN_10 - 1)
+		uartFrameQueue.in = 0;
+
+	CORE_CriticalDisableIrq();
+	uartFrameQueue.num += 1;
+	CORE_CriticalEnableIrq();
+
+	return 0;
+}
+
+UartFrame* UartFrameDequeue(void)
+{
+	UartFrame *uFrame = NULL;
+
+	if (UartFrameEnqueueEmpty())
+		goto out;
+
+	uFrame = &uartFrameQueue.RS422frame[uartFrameQueue.out];
+	uartFrameQueue.out++;
+	if (uartFrameQueue.out > UART_FRAMR_QUEUE_LEN_10 - 1)
+		uartFrameQueue.out = 0;
+
+	CORE_CriticalDisableIrq();
+	uartFrameQueue.num -= 1;
+	CORE_CriticalEnableIrq();
+
+out:
+	return uFrame;
+}
 
 /*
  * Declare a circular buffer structure to use for Rx and Tx queues
@@ -174,7 +230,7 @@ void uartPutChar(uint8_t ch)
  * @brief  uartPutData function
  *
  *****************************************************************************/
-void uartPutData(uint8_t * dataPtr, uint32_t dataLen)
+void uartPutData(volatile uint8_t * dataPtr, uint32_t dataLen)
 {
 	uint32_t i = 0;
 

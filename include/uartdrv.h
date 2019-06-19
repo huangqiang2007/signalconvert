@@ -16,11 +16,6 @@
  * */
 typedef struct {
 	/*
-	 * 1: in sending, 0: invalid frame
-	 * */
-	uint8_t in_sending;
-
-	/*
 	 * the frame of 12 bytes
 	 * */
 	uint8_t uartFrame[UARTFRAME_LEN_12B];
@@ -33,5 +28,7 @@ extern uint32_t uartGetData(uint8_t * dataPtr, uint32_t dataLen);
 extern void    uartPutChar(uint8_t charPtr);
 extern uint8_t uartGetChar(void);
 extern uint32_t uartReadChar(uint8_t *data);
+extern int UartFrameEnqueue(UartFrame *uFrame);
+extern UartFrame* UartFrameDequeue(void);
 
 #endif /* UARTDRV_H_ */
