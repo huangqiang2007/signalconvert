@@ -1,10 +1,3 @@
-/*
- * adcdrv.h
- *
- *  Created on: 2016-11-8
- *      Author: admin
- */
-
 #ifndef ADCDRV_H_
 #define ADCDRV_H_
 
@@ -34,7 +27,7 @@ typedef struct {
  * @adc_smaple_data[]: the array of ADC_SAMPLE_BUFFER type
  * */
 typedef struct {
-	int8_t samples;
+	volatile int8_t samples;
 	int8_t in, out;
 	volatile ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
 } AdcSampleDataQueueDef;

@@ -1,10 +1,3 @@
-/*
- * uartdrv.h
- *
- *  Created on: 2017-1-17
- *      Author: admin
- */
-
 #ifndef UARTDRV_H_
 #define UARTDRV_H_
 

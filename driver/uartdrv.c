@@ -287,7 +287,6 @@ uint32_t uartGetData(uint8_t * dataPtr, uint32_t dataLen)
 	return i;
 }
 
-
 /*
  * @brief UART0 RX IRQ Handler
  *

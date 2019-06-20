@@ -1,9 +1,3 @@
-/*
- * timer.h
- *
- *  Created on: 2017Äê7ÔÂ4ÈÕ
- *      Author: Administrator
- */
 #include <stdint.h>
 #include <stdlib.h>
 #ifndef INLCUDE_TIMER_H_

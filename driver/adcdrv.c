@@ -1,10 +1,3 @@
-/*
- * adcdrv.c
- *
- *  Created on: 2017Äê7ÔÂ4ÈÕ
- *      Author: Administrator
- */
-
 #include <string.h>
 #include "em_dma.h"
 #include "em_adc.h"
@@ -15,7 +8,15 @@
 #include "uartdrv.h"
 #include <stdbool.h>
 
+/*
+ * ADC sample clock
+ * */
 #define ADC_CLK_1M 1000000
+
+/*
+ * drop several samples before ADC is stable.
+ * */
+#define ADC_IGNORE_CNT 5
 
 AdcSampleDataQueueDef adcSampleDataQueue = {0};
 DMA_CB_TypeDef dma_adc_cb;
@@ -110,6 +111,16 @@ static ADC_SAMPLE_BUFFERDef* DMA_getValidBuffer(void)
 void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 {
 	ADC_SAMPLE_BUFFERDef *pSampleBuff = NULL;
+	static uint8_t drop_cnt = 0;
+
+	/*
+	 * drop first some samples since it's likely ADC
+	 * is unstable during warming up phase.
+	 * */
+	if (drop_cnt < ADC_IGNORE_CNT) {
+		drop_cnt++;
+		return;
+	}
 
 	pSampleBuff = DMA_getFreeSampleBuffer();
 	if (!pSampleBuff)

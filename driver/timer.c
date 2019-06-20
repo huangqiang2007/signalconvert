@@ -1,9 +1,3 @@
-/*
- * timer.c
- *
- *  Created on: 2016-12-27
- *      Author: admin
- */
 #include "main.h"
 #include "em_device.h"
 #include "em_cmu.h"
