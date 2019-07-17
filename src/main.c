@@ -107,7 +107,7 @@ int main(void)
 	 * */
 	Clock_config();
 
-	adc_test();
+	//adc_test();
 
 	/*
 	 * RS422 Uart init for delivering converted data
