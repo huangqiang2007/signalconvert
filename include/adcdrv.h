@@ -4,7 +4,7 @@
 #include "main.h"
 
 #define ADC_CHNL_NUM 7
-#define ADC_SCAN_LOOPS 100
+#define ADC_SCAN_LOOPS 1
 
 #define ADC_SAMPLE_BUFFER_NUM 4
 

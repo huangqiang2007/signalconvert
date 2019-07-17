@@ -2,6 +2,7 @@
 #include "em_dma.h"
 #include "em_adc.h"
 #include "em_cmu.h"
+#include "em_core.h"
 #include "time.h"
 #include "adcdrv.h"
 #include "dmactrl.h"
@@ -55,7 +56,7 @@ void ADCConfig(void)
 	/*
 	* Init for scan sequence use: 7 AD sample channels
 	* */
-	scanInit.rep = 1;
+	scanInit.rep = true;
 	scanInit.reference = adcRef2V5;
 	scanInit.resolution = _ADC_SINGLECTRL_RES_8BIT;
 	scanInit.input = ADC_SCANCTRL_INPUTMASK_CH0 | ADC_SCANCTRL_INPUTMASK_CH1 | ADC_SCANCTRL_INPUTMASK_CH2 |
@@ -132,6 +133,8 @@ void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 	 * update sample counter
 	 * */
 	adcSampleDataQueue.samples++;
+
+	DMA_ADC_Start();
 }
 
 /*
@@ -160,7 +163,7 @@ void DMAConfig(void)
 	dma_adc_cb.userPtr = (void *)&adcSampleDataQueue;
 
 	chnlCfg.highPri = false;
-	chnlCfg.enableInt = false;
+	chnlCfg.enableInt = true;
 	chnlCfg.select = DMAREQ_ADC0_SCAN;
 	chnlCfg.cb = &dma_adc_cb;
 	DMA_CfgChannel(DMA_CHANNEL, &chnlCfg);
@@ -174,6 +177,9 @@ void DMAConfig(void)
 	descrCfg.arbRate = dmaArbitrate1;
 	descrCfg.hprot = 0;
 	DMA_CfgDescr(DMA_CHANNEL, true, &descrCfg);
+
+	NVIC_ClearPendingIRQ(DMA_IRQn);
+	NVIC_EnableIRQ(DMA_IRQn);
 }
 
 void DMA_ADC_Start(void)
