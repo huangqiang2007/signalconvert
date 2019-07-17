@@ -3,6 +3,7 @@
 #include "em_device.h"
 #include "em_usart.h"
 #include "em_gpio.h"
+#include "em_core.h"
 #include "main.h"
 #include "uartdrv.h"
 

@@ -21,7 +21,8 @@
 
 AdcSampleDataQueueDef adcSampleDataQueue = {0};
 DMA_CB_TypeDef dma_adc_cb;
-uint8_t g_sampleResultBuffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
+uint8_t g_primaryResultBuffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
+uint8_t g_alterResultBuffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
 uint8_t g_convResult[ADC_CHNL_NUM] = {0};
 
 /*
@@ -120,21 +121,32 @@ void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 	 * */
 	if (drop_cnt < ADC_IGNORE_CNT) {
 		drop_cnt++;
-		return;
+		goto out;
 	}
 
 	pSampleBuff = DMA_getFreeSampleBuffer();
 	if (!pSampleBuff)
 		return;
 
-	memcpy(pSampleBuff->adc_sample_buffer, g_sampleResultBuffer, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
+	if (primary == true)
+		memcpy(pSampleBuff->adc_sample_buffer, g_primaryResultBuffer, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
+	else
+		memcpy(pSampleBuff->adc_sample_buffer, g_alterResultBuffer, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
 
 	/*
 	 * update sample counter
 	 * */
 	adcSampleDataQueue.samples++;
 
-	DMA_ADC_Start();
+out:
+	/* Re-activate the DMA */
+	DMA_RefreshPingPong(channel,
+						primary,
+						false,
+						NULL,
+						NULL,
+						ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1,
+						false);
 }
 
 /*
@@ -177,16 +189,26 @@ void DMAConfig(void)
 	descrCfg.arbRate = dmaArbitrate1;
 	descrCfg.hprot = 0;
 	DMA_CfgDescr(DMA_CHANNEL, true, &descrCfg);
+	DMA_CfgDescr(DMA_CHANNEL, false, &descrCfg);
 
-	NVIC_ClearPendingIRQ(DMA_IRQn);
-	NVIC_EnableIRQ(DMA_IRQn);
+	// Start DMA
+	DMA_ActivatePingPong(
+		DMA_CHANNEL,
+		false,
+		(void *)&g_primaryResultBuffer, // primary destination
+		(void *)&(ADC0->SCANDATA), // primary source
+		ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1,
+		(void *)&g_alterResultBuffer, // alternate destination
+		(void *)&(ADC0->SCANDATA), // alternate source
+		ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1);
 }
 
 void DMA_ADC_Start(void)
 {
-	DMA_ActivateBasic(DMA_CHANNEL, true, false, (void *)g_sampleResultBuffer,
+/*
+	DMA_ActivateBasic(DMA_CHANNEL, true, false, (void *)g_primaryResultBuffer,
 		(void *)&(ADC0->SCANDATA), ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1);
-
+*/
 	/*
 	 * Start Scan
 	 * */
