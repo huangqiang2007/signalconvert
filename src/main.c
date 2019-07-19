@@ -130,8 +130,10 @@ int main(void)
 	 * */
 	DMA_ADC_Start();
 
-  	UDELAY_Calibrate();
-  	Delay_ms(500);
+	Timer_init();
+
+	//UDELAY_Calibrate();
+	Delay_ms(500);
 
 	while (1) {
 		collectFrame();

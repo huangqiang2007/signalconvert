@@ -107,11 +107,10 @@ void setupTimer1(void)
 	TIMER_Init(TIMER1, &timerInit);
 }
 
-/* 10ms of 1 tick */
-//void Delay_Ticks(uint32_t ticks)
-//{
-//
-//}
+void Timer_init(void)
+{
+	setupTimer1();
+}
 
 void Delay_us(uint32_t us)
 {

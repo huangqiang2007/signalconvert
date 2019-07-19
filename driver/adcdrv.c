@@ -57,12 +57,12 @@ void ADCConfig(void)
 	/*
 	* Init for scan sequence use: 7 AD sample channels
 	* */
-	scanInit.rep = true;
+	scanInit.rep = false;
 	scanInit.reference = adcRef2V5;
 	scanInit.resolution = _ADC_SINGLECTRL_RES_8BIT;
 	scanInit.input = ADC_SCANCTRL_INPUTMASK_CH0 | ADC_SCANCTRL_INPUTMASK_CH1 | ADC_SCANCTRL_INPUTMASK_CH2 |
 					   ADC_SCANCTRL_INPUTMASK_CH3 | ADC_SCANCTRL_INPUTMASK_CH4 | ADC_SCANCTRL_INPUTMASK_CH5 |
-					   ADC_SCANCTRL_INPUTMASK_CH6;
+					   ADC_SCANCTRL_INPUTMASK_CH6 | ADC_SCANCTRL_INPUTMASK_CH7;
 	ADC_InitScan(ADC0, &scanInit);
 }
 
@@ -126,7 +126,7 @@ void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 
 	pSampleBuff = DMA_getFreeSampleBuffer();
 	if (!pSampleBuff)
-		return;
+		goto out;
 
 	if (primary == true)
 		memcpy(pSampleBuff->adc_sample_buffer, g_primaryResultBuffer, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
@@ -140,13 +140,16 @@ void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 
 out:
 	/* Re-activate the DMA */
-	DMA_RefreshPingPong(channel,
-						primary,
-						false,
-						NULL,
-						NULL,
-						ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1,
-						false);
+	DMA_RefreshPingPong(
+		channel,
+		primary,
+		false,
+		NULL,
+		NULL,
+		ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1,
+		false);
+
+	DMA_ADC_Start();
 }
 
 /*

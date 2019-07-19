@@ -3,7 +3,7 @@
 
 #include "main.h"
 
-#define ADC_CHNL_NUM 7
+#define ADC_CHNL_NUM 8
 #define ADC_SCAN_LOOPS 1
 
 #define ADC_SAMPLE_BUFFER_NUM 4
