@@ -5,6 +5,7 @@
 
 #define ADC_CHNL_NUM 8
 #define ADC_SCAN_LOOPS 1
+#define DMA_BUFF_LEN (ADC_CHNL_NUM * 2)
 
 #define ADC_SAMPLE_BUFFER_NUM 4
 
@@ -15,7 +16,7 @@
  * @adc_sample_buffer: the array stores the sampled data
  * */
 typedef struct {
-	uint8_t adc_sample_buffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
+	uint8_t adc_sample_buffer[DMA_BUFF_LEN];
 } ADC_SAMPLE_BUFFERDef;
 
 /*

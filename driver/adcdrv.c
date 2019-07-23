@@ -21,8 +21,8 @@
 
 AdcSampleDataQueueDef adcSampleDataQueue = {0};
 DMA_CB_TypeDef dma_adc_cb;
-uint8_t g_primaryResultBuffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
-uint8_t g_alterResultBuffer[ADC_SCAN_LOOPS * ADC_CHNL_NUM];
+uint8_t g_primaryResultBuffer[DMA_BUFF_LEN];
+uint8_t g_alterResultBuffer[DMA_BUFF_LEN];
 uint8_t g_convResult[ADC_CHNL_NUM] = {0};
 
 /*
@@ -59,7 +59,7 @@ void ADCConfig(void)
 	* */
 	scanInit.rep = false;
 	scanInit.reference = adcRef2V5;
-	scanInit.resolution = _ADC_SINGLECTRL_RES_8BIT;
+	scanInit.resolution = _ADC_SINGLECTRL_RES_12BIT;
 	scanInit.input = ADC_SCANCTRL_INPUTMASK_CH0 | ADC_SCANCTRL_INPUTMASK_CH1 | ADC_SCANCTRL_INPUTMASK_CH2 |
 					   ADC_SCANCTRL_INPUTMASK_CH3 | ADC_SCANCTRL_INPUTMASK_CH4 | ADC_SCANCTRL_INPUTMASK_CH5 |
 					   ADC_SCANCTRL_INPUTMASK_CH6 | ADC_SCANCTRL_INPUTMASK_CH7;
@@ -129,9 +129,9 @@ void DMA_ADC_callback(unsigned int channel, bool primary, void *user)
 		goto out;
 
 	if (primary == true)
-		memcpy(pSampleBuff->adc_sample_buffer, g_primaryResultBuffer, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
+		memcpy(pSampleBuff->adc_sample_buffer, g_primaryResultBuffer, DMA_BUFF_LEN);
 	else
-		memcpy(pSampleBuff->adc_sample_buffer, g_alterResultBuffer, ADC_SCAN_LOOPS * ADC_CHNL_NUM);
+		memcpy(pSampleBuff->adc_sample_buffer, g_alterResultBuffer, DMA_BUFF_LEN);
 
 	/*
 	 * update sample counter
@@ -175,7 +175,7 @@ void DMAConfig(void)
 	* Configure DMA channel used
 	* */
 	dma_adc_cb.cbFunc = DMA_ADC_callback;
-	dma_adc_cb.userPtr = (void *)&adcSampleDataQueue;
+	dma_adc_cb.userPtr = NULL;
 
 	chnlCfg.highPri = false;
 	chnlCfg.enableInt = true;
@@ -186,9 +186,9 @@ void DMAConfig(void)
 	/*
 	* one byte per transfer
 	* */
-	descrCfg.dstInc = dmaDataInc1;
+	descrCfg.dstInc = dmaDataInc2;
 	descrCfg.srcInc = dmaDataIncNone;
-	descrCfg.size = dmaDataSize1;
+	descrCfg.size = dmaDataSize2;
 	descrCfg.arbRate = dmaArbitrate1;
 	descrCfg.hprot = 0;
 	DMA_CfgDescr(DMA_CHANNEL, true, &descrCfg);
@@ -200,10 +200,10 @@ void DMAConfig(void)
 		false,
 		(void *)&g_primaryResultBuffer, // primary destination
 		(void *)&(ADC0->SCANDATA), // primary source
-		ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1,
+		ADC_CHNL_NUM - 1,
 		(void *)&g_alterResultBuffer, // alternate destination
 		(void *)&(ADC0->SCANDATA), // alternate source
-		ADC_SCAN_LOOPS * ADC_CHNL_NUM - 1);
+		ADC_CHNL_NUM - 1);
 }
 
 void DMA_ADC_Start(void)
@@ -222,21 +222,13 @@ int getAverageSampleValue(void)
 {
 	ADC_SAMPLE_BUFFERDef *pSampleBuff = NULL;
 	int i = 0;
-	uint32_t sumSampleValue[ADC_CHNL_NUM] = {0};
 
 	pSampleBuff = DMA_getValidBuffer();
 	if (!pSampleBuff)
 		return -1;
 
-	for (i = 0; i < ADC_SCAN_LOOPS; i += 7) {
-		sumSampleValue[0] += pSampleBuff->adc_sample_buffer[i];
-		sumSampleValue[1] += pSampleBuff->adc_sample_buffer[i + 1];
-		sumSampleValue[2] += pSampleBuff->adc_sample_buffer[i + 2];
-		sumSampleValue[3] += pSampleBuff->adc_sample_buffer[i + 3];
-		sumSampleValue[4] += pSampleBuff->adc_sample_buffer[i + 4];
-		sumSampleValue[5] += pSampleBuff->adc_sample_buffer[i + 5];
-		sumSampleValue[6] += pSampleBuff->adc_sample_buffer[i + 6];
-	}
+	for (i = 0; i < ADC_CHNL_NUM; i++)
+		g_convResult[i] = (*((uint16_t *)&pSampleBuff->adc_sample_buffer[i * 2]) >> 4) & 0xFF;
 
 	/*
 	 * update sample counter to return the buffer to queue,
@@ -245,9 +237,6 @@ int getAverageSampleValue(void)
 	CORE_CriticalDisableIrq();
 	adcSampleDataQueue.samples--;
 	CORE_CriticalEnableIrq();
-
-	for (i = 0; i < ADC_CHNL_NUM; i++)
-		g_convResult[i] = sumSampleValue[i] / ADC_SCAN_LOOPS;
 
 	return 0;
 }

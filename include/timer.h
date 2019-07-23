@@ -3,6 +3,7 @@
 #ifndef INLCUDE_TIMER_H_
 #define INLCUDE_TIMER_H_
 
+void Timer_init(void);
 void setupTimer0(void);
 void setupTimer1(void);
 void Delay_ms(uint32_t ms);

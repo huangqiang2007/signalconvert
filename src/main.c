@@ -10,6 +10,7 @@
 #include "udelay.h"
 #include "hal-config.h"
 #include "main.h"
+#include "timer.h"
 #include "uartdrv.h"
 #include "Typedefs.h"
 
