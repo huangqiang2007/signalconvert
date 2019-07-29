@@ -38,7 +38,7 @@ void Clock_config(void)
 	CMU_ClockEnable(cmuClock_USART0, true);
 }
 
-#if 1
+#if 0
 
 #define adcFreq   13000000
 
@@ -131,6 +131,9 @@ int main(void)
 	 * */
 	DMA_ADC_Start();
 
+	/*
+	 * timer init
+	 * */
 	Timer_init();
 
 	//UDELAY_Calibrate();
