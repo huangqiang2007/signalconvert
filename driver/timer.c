@@ -8,22 +8,39 @@
 #include "em_chip.h"
 #include "em_gpio.h"
 #include "adcdrv.h"
+
 // Freq = 25M
 #define TOP 25000
+
+/*
+ * counter for 1ms
+ * */
 #define MS_COUNT  3125  //25000000 / 8 / 1000
+
 #define MAX_MS    20    //65535 / MS_COUNT
 
 volatile bool Timer1_overflow;
-volatile uint32_t Ticks = 0;
+volatile uint32_t g_Ticks = 0;
 /**************************************************************************//**
  * @brief TIMER0_IRQHandler
  * Interrupt Service Routine TIMER0 Interrupt Line
  *****************************************************************************/
-extern uint32_t sleeptime;
 void TIMER0_IRQHandler(void)
 {
-	/* Clear flag for TIMER0 overflow interrupt */
+	/*
+	 * Clear flag for TIMER0 overflow interrupt
+	 * */
 	TIMER_IntClear(TIMER0, TIMER_IF_OF);
+
+	g_Ticks++;
+
+	/*
+	 * send one frame in 20ms interval
+	 * */
+	if (g_Ticks == 20) {
+		sendFrame();
+		g_Ticks = 0;
+	}
 }
 
 /**************************************************************************//**
@@ -32,11 +49,12 @@ void TIMER0_IRQHandler(void)
  *****************************************************************************/
 void TIMER1_IRQHandler(void)
 {
-	/* Clear flag for TIMER0 overflow interrupt */
+	/*
+	 * Clear flag for TIMER0 overflow interrupt
+	 * */
 	TIMER_IntClear(TIMER1, TIMER_IF_OF);
 	Timer1_overflow = true;
 }
-
 
 void setupTimer0(void)
 {
@@ -67,7 +85,7 @@ void setupTimer0(void)
 
 	/* Set TIMER Top value */
 	//TIMER_TopSet(TIMER0, TOP);
-	TIMER_TopSet(TIMER0, 3125); //1ms
+	TIMER_TopSet(TIMER0, MS_COUNT); //1ms
 
 	/* Configure TIMER */
 	TIMER_Init(TIMER0, &timerInit);
@@ -109,6 +127,7 @@ void setupTimer1(void)
 
 void Timer_init(void)
 {
+	setupTimer0();
 	setupTimer1();
 }
 
