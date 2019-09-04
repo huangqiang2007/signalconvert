@@ -37,7 +37,7 @@ void TIMER0_IRQHandler(void)
 	/*
 	 * send one frame in 20ms interval
 	 * */
-	if (g_Ticks == 20) {
+	if (g_Ticks == 2) {
 		sendFrame();
 		g_Ticks = 0;
 	}
@@ -85,7 +85,7 @@ void setupTimer0(void)
 
 	/* Set TIMER Top value */
 	//TIMER_TopSet(TIMER0, TOP);
-	TIMER_TopSet(TIMER0, MS_COUNT); //1ms
+	TIMER_TopSet(TIMER0, MS_COUNT * 10); //10ms
 
 	/* Configure TIMER */
 	TIMER_Init(TIMER0, &timerInit);
