@@ -4,6 +4,20 @@
 #include <stdint.h>
 
 /*
+ * Declare a circular buffer structure to use for Rx and Tx queues
+ * */
+#define BUFFERSIZE 480
+
+struct circularBuffer
+{
+  uint8_t  data[BUFFERSIZE];  /* data buffer */
+  uint32_t rdI;               /* read index */
+  uint32_t wrI;               /* write index */
+  uint32_t pendingBytes;      /* count of how many bytes are not yet handled */
+  bool     overflow;          /* buffer overflow indicator */
+};
+
+/*
  * frame format layout
  *
  *struct UartFrameDef {

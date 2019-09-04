@@ -82,14 +82,7 @@ out:
  * */
 #define BUFFERSIZE 480
 
-volatile static struct circularBuffer
-{
-  uint8_t  data[BUFFERSIZE];  /* data buffer */
-  uint32_t rdI;               /* read index */
-  uint32_t wrI;               /* write index */
-  uint32_t pendingBytes;      /* count of how many bytes are not yet handled */
-  bool     overflow;          /* buffer overflow indicator */
-} rxBuf, txBuf = { {0}, 0, 0, 0, false };
+volatile struct circularBuffer rxBuf, txBuf = { {0}, 0, 0, 0, false };
 
 /* Setup UART0 in async mode for RS232*/
 static USART_TypeDef *uart = USART0;

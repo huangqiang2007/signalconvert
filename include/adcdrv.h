@@ -16,7 +16,7 @@
  * @adc_sample_buffer: the array stores the sampled data
  * */
 typedef struct {
-	uint8_t adc_sample_buffer[DMA_BUFF_LEN];
+	volatile uint8_t adc_sample_buffer[DMA_BUFF_LEN];
 } ADC_SAMPLE_BUFFERDef;
 
 /*
@@ -30,7 +30,7 @@ typedef struct {
 typedef struct {
 	volatile int8_t samples;
 	int8_t in, out;
-	volatile ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
+	ADC_SAMPLE_BUFFERDef adc_smaple_data[ADC_SAMPLE_BUFFER_NUM];
 } AdcSampleDataQueueDef;
 
 extern void ADCConfig(void);

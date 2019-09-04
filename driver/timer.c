@@ -8,10 +8,13 @@
 #include "em_chip.h"
 #include "em_gpio.h"
 #include "adcdrv.h"
+#include "uartdrv.h"
 
 // Freq = 25M
 #define TOP 25000
 
+
+extern struct circularBuffer txBuf;
 /*
  * counter for 1ms
  * */
@@ -38,8 +41,12 @@ void TIMER0_IRQHandler(void)
 	 * send one frame in 20ms interval
 	 * */
 	if (g_Ticks == 2) {
-		sendFrame();
-		g_Ticks = 0;
+		if (txBuf.pendingBytes > 460) {
+			g_Ticks = 0;
+		} else {
+			sendFrame();
+			g_Ticks = 0;
+		}
 	}
 }
 
